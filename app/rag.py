@@ -47,15 +47,21 @@ class CVRag:
         extra_text: str = "",
         cache_path: Optional[Path] = None,
     ) -> None:
-        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        # Support both OpenAI and OpenRouter (OpenAI-compatible API)
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY", "").strip()
         if OpenAI is None:
             raise RuntimeError("The 'openai' package is not installed.")
         if not api_key:
             raise RuntimeError(
-                "OPENAI_API_KEY is not set. Add it to AI_Chatbot/.env to enable the assistant."
+                "No API key found. Set OPENROUTER_API_KEY or OPENAI_API_KEY in AI_Chatbot/.env."
             )
 
-        self.client = OpenAI(api_key=api_key)
+        # OpenRouter uses OpenAI-compatible API with different base URL
+        base_url = os.getenv("OPENAI_BASE_URL")
+        if os.getenv("OPENROUTER_API_KEY"):
+            base_url = base_url or "https://openrouter.ai/api/v1"
+
+        self.client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
         self.chat_model = os.getenv("CHAT_MODEL", "gpt-4o-mini")
         self.embedding_model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
         self.cache_path = cache_path
