@@ -27,16 +27,36 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env`. You can use OpenAI directly or OpenRouter (OpenAI-compatible).
+
+**Option A — OpenAI**
 
 ```env
 OPENAI_API_KEY=sk-your-key-here
 CHAT_MODEL=gpt-4o-mini
 EMBEDDING_MODEL=text-embedding-3-small
+```
 
+**Option B — OpenRouter**
+
+```env
+OPENROUTER_API_KEY=sk-or-your-key-here
+CHAT_MODEL=openai/gpt-4o-mini
+EMBEDDING_MODEL=openai/text-embedding-3-small
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+```
+
+OpenRouter model IDs are namespaced (for example `openai/gpt-4o-mini`,
+`anthropic/claude-3.5-sonnet`). Embedding models need the same prefix
+(`openai/text-embedding-3-small`). When `OPENROUTER_API_KEY` is set the
+service points at OpenRouter automatically.
+
+Then:
+
+```env
 # Use ONE of these:
 CV_PATH="./Abolore_Sanni_CV.pdf"
-# CV_URL=http://localhost:8000/profile/cv/view
+# CV_URL=https://portfolio-001-0ce74aa7e84e.herokuapp.com/profile/cv/view
 
 PORT=8010
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
@@ -132,7 +152,7 @@ Rebuild and redeploy the frontend so the production bundle embeds the correct UR
   `RELOAD_TOKEN` (or restart the service). The cache fingerprint detects changes
   automatically on the next launch. `/reload` is disabled when `RELOAD_TOKEN`
   is unset.
-- If `OPENAI_API_KEY` is missing, `/health` reports `degraded` and `/chat`
-  returns HTTP 503 with a clear message.
+- If neither `OPENROUTER_API_KEY` nor `OPENAI_API_KEY` is set, `/health`
+  reports `degraded` and `/chat` returns HTTP 503 with a clear message.
 - Answers are requested as plain text so the portfolio widget never renders
   raw Markdown.
