@@ -13,7 +13,8 @@ prompt forbids inventing employers, dates, degrees, metrics, or links.
   extra knowledge from `KNOWLEDGE_FILE` or `KNOWLEDGE_DIR`.
 - `app/rag.py` — chunking, embedding, disk-cached index, cosine retrieval with
   keyword boosting, and answer generation.
-- `app/main.py` — FastAPI API: `/chat`, `/suggestions`, `/health`, `/reload`.
+- `app/main.py` — FastAPI API: `/chat`, `/chat/stream`, `/suggestions`,
+  `/health`, `/reload`.
 - `.cache/` — the embedding cache (`cv_index.json`) is rebuilt only when the CV
   or embedding model changes.
 
@@ -87,13 +88,30 @@ The request body also accepts a short conversation history:
 
 ```json
 {
-  "question": "And which of those has he used in production?",
+  "question": "And which of those has she used in production?",
   "history": [
-    { "role": "user", "content": "What are his core skills?" },
+    { "role": "user", "content": "What are her core skills?" },
     { "role": "assistant", "content": "LangGraph, LangChain, FastAPI..." }
   ]
 }
 ```
+
+### Streaming
+
+`POST /chat/stream` takes the same body and streams the answer as plain text
+chunks, so the widget renders tokens as they arrive:
+
+```powershell
+curl.exe -N -X POST http://localhost:8010/chat/stream `
+  -H "Content-Type: application/json" `
+  -d '{\"question\":\"What skills does Abolore have?\"}'
+```
+
+The portfolio widget uses this endpoint by default. `/chat` is kept for
+non-streaming clients.
+
+Abolore is referred to with she/her pronouns everywhere in the generated
+answers; the rule lives in `SYSTEM_PROMPT` in `app/rag.py`.
 
 ## Frontend
 

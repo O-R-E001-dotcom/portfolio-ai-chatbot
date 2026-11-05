@@ -9,6 +9,7 @@ from typing import Literal, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.cv_loader import load_cv_text, load_knowledge_text
@@ -116,6 +117,42 @@ def chat(payload: ChatRequest):
         ) from exc
 
     return ChatResponse(answer=answer)
+
+
+@app.post("/chat/stream")
+def chat_stream(payload: ChatRequest):
+    """Stream the answer as plain text chunks (used by the portfolio widget)."""
+    try:
+        rag = get_rag()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=500, detail="Unable to answer right now."
+        ) from exc
+
+    history = [turn.model_dump() for turn in (payload.history or [])]
+
+    def event_stream():
+        try:
+            for token in rag.stream_answer(payload.question, history=history):
+                yield token
+        except Exception:  # noqa: BLE001
+            yield (
+                "\n\nSorry, the response was interrupted. "
+                "Please try again in a moment."
+            )
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/reload")
